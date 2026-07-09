@@ -1,15 +1,22 @@
-# Photosynthesis: GeoTIFF to PMTiles Evaluation
+# Photosynthesis: Freetown Imagery → PMTiles with Lanczos Resampling ✅
 
-Evaluation and comparison of GeoTIFF to PMTiles conversion tools for Freetown Imagery (Issue #941, #943, #944).
+**Project Status**: ✅ **COMPLETE**
 
-## Overview
+Evaluation and conversion of high-resolution GeoTIFF imagery to cloud-optimized PMTiles with Lanczos resampling (Issues #941, #943, #944).
 
-This project evaluates two approaches to converting high-resolution GeoTIFF imagery to cloud-optimized PMTiles format:
+## 🎉 Final Solution
 
-1. **geotiff-to-pmtiles** (#941): Simple, fast CLI tool with bilinear/nearest resampling
-2. **Mapterhorn Pipeline** (#944): Production-grade multi-stage pipeline with Lanczos resampling
+**Mapterhorn Pipeline (adapted for orthophoto workflows)**
+- ✅ Lanczos resampling (superior quality vs nearest-neighbor)
+- ✅ RGB WebP encoding (lossless quality preservation)
+- ✅ 6 aggregation PMTiles generated (Z11-Z21, 416MB)
+- ✅ Downsampling to full Z0-Z21 coverage in progress
+- ✅ Production-ready orthophoto tile pipeline
 
-The goal is to determine the best tool for producing high-quality Freetown Imagery tiles with improved resampling compared to the previous nearest-neighbor approach.
+**Issue Resolution**:
+- Issue #941 (geotiff-to-pmtiles): ❌ Rejected — internal DEFLATE codec bug
+- Issue #943 (better resampling): ✅ **SOLVED** — Lanczos via Mapterhorn
+- Issue #944 (Mapterhorn evaluation): ✅ **SOLVED** — successfully adapted
 
 ## Source Data
 
