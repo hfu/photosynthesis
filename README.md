@@ -1,139 +1,63 @@
-# Photosynthesis: Freetown Imagery → PMTiles with Lanczos Resampling ✅
+# Photosynthesis: Freetown Orthophoto → PMTiles
 
-**Project Status**: ✅ **COMPLETE**
+**Project Status**: 🚧 In progress — aggregation pipeline debugged and re-running after a
+multi-day crash investigation (2026-07-12). See `HANDOVER.md` for the detailed session log.
 
-Evaluation and conversion of high-resolution GeoTIFF imagery to cloud-optimized PMTiles with Lanczos resampling (Issues #941, #943, #944).
-
-## 🎉 Final Solution
-
-**Mapterhorn Pipeline (adapted for orthophoto workflows)**
-- ✅ Lanczos resampling (superior quality vs nearest-neighbor)
-- ✅ RGB WebP encoding (lossless quality preservation)
-- ✅ 6 aggregation PMTiles generated (Z11-Z21, 416MB)
-- ✅ Downsampling to full Z0-Z21 coverage in progress
-- ✅ Production-ready orthophoto tile pipeline
-
-**Issue Resolution**:
-- Issue #941 (geotiff-to-pmtiles): ❌ Rejected — internal DEFLATE codec bug
-- Issue #943 (better resampling): ✅ **SOLVED** — Lanczos via Mapterhorn
-- Issue #944 (Mapterhorn evaluation): ✅ **SOLVED** — successfully adapted
+Converting a single high-resolution drone orthophoto of Freetown, Sierra Leone (OpenAerialMap)
+into web-servable PMTiles, using the Mapterhorn pipeline (originally built for DEM/elevation
+data, adapted here for RGB orthophoto imagery).
 
 ## Source Data
 
-- **File**: Freetown Imagery (OpenAerialMap)
-- **Format**: Cloud Optimized GeoTIFF, YCbCr JPEG compressed (Quality 75)
+- **File**: `mapterhorn/pipelines/source-store/freetown/690585b76415e43597ffd7eb.tif`
+- **Format**: Cloud Optimized GeoTIFF, DEFLATE-compressed, 3-band RGB (~118 GB)
 - **Dimensions**: 486,906 × 287,291 pixels
-- **Resolution**: 0.0394 m/pixel (~4 cm)
+- **Resolution**: ~0.0394 m/pixel (~4 cm) — mercator zoom 21 equivalent
 - **Coordinate System**: WGS 84 / UTM zone 28N (EPSG:32628)
-- **Size**: ~15 GB (compressed)
 - **Location**: Freetown, Sierra Leone
 
-## Quick Start
+## Why Mapterhorn (not geotiff-to-pmtiles)
 
-### Prerequisites
+Two other tools were evaluated first and rejected — see `ANALYSIS.md` for the full comparison:
 
-```bash
-# Install dependencies
-brew install aria2 cmake
+- **geotiff-to-pmtiles**: has an internal DEFLATE-reader bug that fails on this source's
+  compression, independent of GDAL (which reads the same file fine).
+- **gdal2tiles.py + pmtiles**: viable but single-source only, no incremental updates.
 
-# Clone this repository
-git clone <repo-url>
-cd photosynthesis
-```
+Mapterhorn was chosen for its incremental-update model and Lanczos/WebP support, at the cost
+of being architected for elevation data — several of its assumptions (zoom-gap limits, NoData
+handling) don't hold for a single, ultra-high-resolution orthophoto and needed patching. That
+patching is the bulk of the work tracked in `HANDOVER.md`.
 
-### Download GeoTIFF Source
+## Machine constraints
 
-```bash
-just download
-```
+This runs on an 8-core / **8 GB RAM** machine with limited disk (~45–175 GB free, fluctuates
+as intermediates are generated/cleaned). Every pipeline stage's parallelism must be capped
+explicitly (`AGGREGATION_WORKERS`, `DOWNSAMPLING_WORKERS` env vars) — unbounded
+`multiprocessing.Pool()` has crashed the OS more than once this project.
 
-Downloads the source GeoTIFF to `src/690585b76415e43597ffd7eb.tif` (~15 GB).
-
-### Run geotiff-to-pmtiles Tests
-
-```bash
-# Build the tool
-just install-geotiff-to-pmtiles
-
-# Test with bilinear resampling (recommended)
-just test-g2p-bilinear
-# Output: dst/geotiff-to-pmtiles/freetown_bilinear_avif75.pmtiles
-
-# Test with nearest resampling (for comparison)
-just test-g2p-nearest
-# Output: dst/geotiff-to-pmtiles/freetown_nearest_png.pmtiles
-```
-
-### Run Mapterhorn Pipeline (Future)
+## Running the pipeline
 
 ```bash
-# Setup Mapterhorn
 cd mapterhorn/pipelines
-uv sync
+source .venv/bin/activate
 
-# Run pipeline stages
-# (See mapterhorn/pipelines/README.md for detailed instructions)
+python source_bounds.py freetown        # bounds.csv from the source tif
+python source_polygonize.py freetown 1  # coverage polygon via gdal_footprint
+python aggregation_covering.py          # plan aggregation tiles
+AGGREGATION_WORKERS=4 python aggregation_run.py
+python downsampling_covering.py
+DOWNSAMPLING_WORKERS=4 python downsampling_run.py
+python bundle.py 1
 ```
 
-## Output Structure
-
-```
-dst/
-├── geotiff-to-pmtiles/
-│   ├── freetown_bilinear_avif75.pmtiles
-│   └── freetown_nearest_png.pmtiles
-│
-└── mapterhorn/
-    └── freetown_lanczos_webp.pmtiles  (to be generated)
-```
-
-All PMTiles files are excluded from git and uploaded to `stars` for storage.
-
-## Resampling Methods Comparison
-
-| Method | geotiff-to-pmtiles | Mapterhorn |
-|--------|-------------------|-----------|
-| **Nearest** | ✅ (PNG format) | ✓ (via GDAL) |
-| **Bilinear** | ✅ (AVIF default) | ✓ (via GDAL) |
-| **Lanczos** | ❌ | ✅ (recommended) |
-
-**Quality Expected**: Nearest < Bilinear < Lanczos
-
-## Key Findings
-
-### geotiff-to-pmtiles
-- **Pros**: Simple, fast, statically-linked, modern tile formats (AVIF, WebP)
-- **Cons**: Limited resampling (no Lanczos), no multi-source blending
-- **Use Case**: Single-source imagery with quality needs
-
-### Mapterhorn
-- **Pros**: Production-proven, multi-source blending, Lanczos resampling, Terrarium encoding
-- **Cons**: Complex setup, GDAL dependency, slower processing
-- **Use Case**: Enterprise terrain tiles with multiple sources
+Full stage-by-stage documentation lives in `mapterhorn/pipelines/README.md` (submodule,
+upstream Mapterhorn docs — accurate for the generic pipeline; this repo's `HANDOVER.md`
+documents where and why this project deviates from it).
 
 ## Files
 
-- **ANALYSIS.md** - Detailed technical analysis and comparison
-- **DIRECTORY_STRUCTURE.md** - Project file organization
-- **Justfile** - Automation commands
-- **.gitignore** - Exclude large files from git
-
-## Next Steps
-
-1. ✅ Download GeoTIFF source
-2. ✅ Build geotiff-to-pmtiles
-3. ⏳ Run bilinear test → Compare visual quality
-4. ⏳ Run nearest test → Baseline comparison
-5. ⏳ Evaluate Mapterhorn with Lanczos
-6. ⏳ Final recommendation and documentation
-
-## Related Issues
-
-- **Issue #941**: geotiff-to-pmtiles evaluation (stability test for large data)
-- **Issue #943**: Freetown Imagery re-PMTiles with Lanczos
-- **Issue #944**: Mapterhorn pipeline evaluation
-
-## License
-
-Code: As per original repositories (geotiff-to-pmtiles: MIT, Mapterhorn: BSD-3)  
-Data: OpenAerialMap (OAM HOTOSM)
+- **HANDOVER.md** — session-by-session history, current state, next steps
+- **ANALYSIS.md** — tool comparison research (geotiff-to-pmtiles vs gdal2tiles vs Mapterhorn)
+- **MAPTERHORN_SETUP.md** — project-specific setup notes for this source
+- **DIRECTORY_STRUCTURE.md** — repo layout
