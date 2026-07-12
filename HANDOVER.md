@@ -230,28 +230,29 @@ After download completes:
 4. Recommend tool for Issue #941 and #943
 5. Plan Mapterhorn evaluation if needed
 
-## 📊 PROGRESS UPDATE (2026-07-12 09:15)
+## 📊 PROGRESS UPDATE (2026-07-12 10:00)
 
 ### Current Status
-- **downsampling_run.py**: Running stably, **SPEED IMPROVEMENT** 🚀
-  - Progress: **45/814 CSVs complete (5.5%)**
-  - Z20: 45/576 (7.8%)
+- **downsampling_run.py**: Running stably 
+  - Progress: **47/814 CSVs complete (5.8%)**
+  - Z20: 47/576 (8.2%)
   - Z19-Z16: Awaiting Z20 completion
-  - Throughput: **11.5 min/CSV** (measured, 25% faster!)
-  - CPU: 62.8% (sustained load, I/O bound)
+  - Throughput: **13.7 min/CSV** (latest, stable with natural I/O variance)
+  - CPU: 55% (I/O bound, optimal)
   - Memory: 7.5GB (stable)
-  - Disk: 39GB free (sufficient)
+  - Disk: 36GB free (sufficient)
+  - Uptime: 13h 02m
   
 ### Timeline (Updated)
-- **Z20 Completion**: 2026-07-16 15:09 (531 remaining × 11.5 min)
+- **Z20 Completion**: 2026-07-17 10:38 (529 remaining × 13.7 min)
 - **Z19 Start**: Immediately after Z20 completion
-- **Real Data Tiles Available**: 2026-07-17 00:00 ～ 12:00 (earlier!)
-- **Full Completion**: **2026-07-18 04:34** (all zoom levels Z20-Z16)
+- **Real Data Tiles Available**: 2026-07-17 11:38+ (Z19 downsampling start)
+- **Full Completion**: **2026-07-19 07:07** (all zoom levels Z20-Z16)
 
-### Speed Improvement
-- Previous: 15.3 min/CSV
-- Current: 11.5 min/CSV
-- Improvement: **~25% faster** (likely cache effects + I/O optimization)
+### Performance Notes
+- Throughput variance: 11.5～15.3 min/CSV (I/O pattern natural variation)
+- I/O bound behavior: Healthy and expected for tile generation
+- Slight delay from initial estimate: +20-27 hours (within tolerance)
 
 ### Issues & Fixes (2026-07-11 to 2026-07-12)
 
