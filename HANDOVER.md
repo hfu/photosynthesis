@@ -3,6 +3,18 @@
 Freetown drone orthophoto (single 118GB COG, ~4cm/px) → PMTiles via the Mapterhorn pipeline
 (`mapterhorn/` submodule/nested repo), run on an **8-core / 8GB RAM** machine.
 
+## ⚠️ `mapterhorn/` submodule commits are local-only, not pushed anywhere
+
+`mapterhorn/`'s `origin` remote is `https://github.com/mapterhorn/mapterhorn.git` (the upstream
+OSS project) — no push access (403). There's also no `.gitmodules` in this repo, so it isn't
+wired up as a proper git submodule either; it's a nested git repo whose commit hash the parent
+repo's commits reference. **Every code fix from this session (macrotile_z, gdal_footprint,
+NameError, downsampling ordering, orchestration scripts, merge_bundles.py, attribution) exists
+only as local commits on this machine.** Decided (2026-07-14) to leave this as-is for now — the
+actual data pipeline already ran successfully and is live, so this only matters if the code
+needs to be reproduced elsewhere or this machine is lost. If that becomes necessary: fork
+`mapterhorn/mapterhorn` on GitHub, repoint `mapterhorn/`'s `origin` to the fork, and push.
+
 ## Status: complete and live (2026-07-14)
 
 The full pipeline ran end-to-end: Source → Aggregation (187/187) → Downsampling (519/519) →
