@@ -1,7 +1,9 @@
 # Photosynthesis: Freetown Orthophoto → PMTiles
 
-**Project Status**: 🚧 In progress — aggregation pipeline debugged and re-running after a
-multi-day crash investigation (2026-07-12). See `HANDOVER.md` for the detailed session log.
+**Project Status**: ✅ Complete and live. Full pipeline run (Source → Aggregation → Downsampling
+→ Bundle), merged into a single archive, uploaded, and served:
+https://stars.optgeo.org/?tab=tiles&inspect=freetown-mapterhorn&underlay=dark#map=11.28/8.4569/-13.222
+See `HANDOVER.md` for the full debugging history and known limitations.
 
 Converting a single high-resolution drone orthophoto of Freetown, Sierra Leone (OpenAerialMap)
 into web-servable PMTiles, using the Mapterhorn pipeline (originally built for DEM/elevation
@@ -49,11 +51,17 @@ AGGREGATION_WORKERS=4 python aggregation_run.py
 python downsampling_covering.py
 DOWNSAMPLING_WORKERS=4 python downsampling_run.py
 python bundle.py 1
+python merge_bundles.py                 # planet.pmtiles + regional -> one archive
 ```
 
 Full stage-by-stage documentation lives in `mapterhorn/pipelines/README.md` (submodule,
 upstream Mapterhorn docs — accurate for the generic pipeline; this repo's `HANDOVER.md`
 documents where and why this project deviates from it).
+
+`bundle.py` produces two files (a global low-zoom `planet.pmtiles` and a regional
+high-detail archive) by design; `merge_bundles.py` streams them into one deployable
+`freetown-mapterhorn.pmtiles` (the `pmtiles merge` CLI subcommand exists but panics in the
+installed go-pmtiles 1.28.0 — don't use it).
 
 ## Files
 
